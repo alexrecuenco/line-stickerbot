@@ -17,7 +17,6 @@ import config
 
 cssutils.log.setLevel(logging.CRITICAL)
 
-
 # This will mark the last update we've checked
 with open('updatefile', 'r') as f:
     last_update = int(f.readline().strip())
@@ -32,12 +31,13 @@ LINE_URL = config.LINE_URL
 # The text to display when the sent URL doesn't match.
 WRONG_URL_TEXT = config.WRONG_URL_TEXT
 
+
 def dl_stickers(page):
     images = page.find_all('span', attrs={"style": not ""})
     index = 0
-    for i in images:
+    for image in images:
         index += 1
-        imageurl = i['style']
+        imageurl = image['style']
         imageurl = cssutils.parseStyle(imageurl)
         imageurl = imageurl['background-image']
         imageurl = imageurl.replace('url(', '').replace(')', '')
@@ -45,29 +45,34 @@ def dl_stickers(page):
         response = urllib.request.urlopen(imageurl)
         resize_sticker(response, imageurl, index)
 
-def resize_sticker(image, filename, index):
-    filen = filename[-7:3] + str(index)+ filename[-4:]
-    with Image(file=image) as img:
-        ratio = 1
-        if img.width > img.height:
-            ratio = 512.0/img.width
-        else:
-            ratio = 512.0/img.height
-        img.resize(int(img.width*ratio), int(img.height*ratio), 'mitchell')
-        img.save(filename=("downloads/" + filen))
 
-def send_stickers(page):
+def resize_sticker(image, imageurl, index):
+    filename = imageurl[-7:-4] + str(index) + '.png'
+    # Consider hassing the url into hexadecimal of 32 characters? this would probably be inconsistent...
+
+    with Image(file = image) as img:
+        ratio = 512.0 / (max(img.width, img.height))
+        img.resize(int(img.width * ratio), int(img.height * ratio), 'mitchell')
+        # Consider if there is another method that doesn't relly on a ratio, this seems inneficcient
+        img.save(filename = os.path.join("downloads", filename))
+        # Consider saving in downloads in a different folder depending on the product ID and keep them on a database.
+
+
+
+
+def send_stickers(page, remove = True):
     dl_stickers(page)
     with ZipFile('stickers.zip', 'w') as stickerzip:
         for root, dirs, files in os.walk("downloads/"):
             for file in files:
                 stickerzip.write(os.path.join(root, file))
-                os.remove(os.path.join(root, file))
-    requests.post(URL + 'sendDocument', params=dict(
-        chat_id = update['message']['chat']['id']
-    ), files=dict(
-        document = open('stickers.zip', 'rb')
-    ))
+                if remove:
+                    os.remove(os.path.join(root, file))
+    requests.post(
+        URL + 'sendDocument',
+        params ={'chat_id': update['message']['chat']['id']},
+        files = {'document': open('stickers.zip', 'rb')}
+    )
     print("snet;)")
 
 
@@ -97,7 +102,7 @@ while True:
                     requests.get(URL + 'sendMessage',
                                  params=dict(chat_id=update['message']['chat']['id'],
                                              text="Fetching \"" + stickertitle + "\""))
-                    print(name + " (" + str(user) + ")"+ " requested " + sticker_url)
+                    print(name + " (" + str(user) + ")" + " requested " + sticker_url)
                     send_stickers(stickerpage)
                 else:
                     requests.get(URL + 'sendMessage',
