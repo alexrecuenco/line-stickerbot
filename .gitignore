@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
 # C extensions
 *.so
 
@@ -62,3 +61,9 @@ target/
 .ipynb_checkpoints
 
 updatefile
+
+#Pycharm package
+.idea/
+
+#Config file should be hidden, not updated for everyone (Token is secret)
+config.py

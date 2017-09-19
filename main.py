@@ -1,15 +1,19 @@
+# python3
+
 import json
 import logging
-from time import sleep
-import urllib.request
+import os
 import urllib.parse
-import requests
+import urllib.request
+from time import sleep
+from zipfile import ZipFile
+
 import cssutils
+import requests
 from bs4 import BeautifulSoup
 from wand.image import Image
-from zipfile import ZipFile
-from OpenSSL import SSL
-import os
+
+import config
 
 cssutils.log.setLevel(logging.CRITICAL)
 
@@ -18,30 +22,31 @@ cssutils.log.setLevel(logging.CRITICAL)
 with open('updatefile', 'r') as f:
     last_update = int(f.readline().strip())
 # Here, insert the token BotFather gave you for your bot.
-TOKEN = '<token>'
+TOKEN = config.TOKEN
 # This is the url for communicating with your bot
-URL = 'https://api.telegram.org/bot%s/' % TOKEN
+URL = config.URL
 
 # The Line store URL format.
-LINE_URL = "https://store.line.me/stickershop/product/"
+LINE_URL = config.LINE_URL
 
 # The text to display when the sent URL doesn't match.
-WRONG_URL_TEXT = ("That doesn't appear to be a valid URL. "
-                  "To start, send me a URL that starts with " + LINE_URL)
+WRONG_URL_TEXT = config.WRONG_URL_TEXT
 
 def dl_stickers(page):
     images = page.find_all('span', attrs={"style": not ""})
+    index = 0
     for i in images:
+        index += 1
         imageurl = i['style']
         imageurl = cssutils.parseStyle(imageurl)
         imageurl = imageurl['background-image']
         imageurl = imageurl.replace('url(', '').replace(')', '')
         imageurl = imageurl[1:-15]
         response = urllib.request.urlopen(imageurl)
-        resize_sticker(response, imageurl)
+        resize_sticker(response, imageurl, index)
 
-def resize_sticker(image, filename):
-    filen = filename[-7:]
+def resize_sticker(image, filename, index):
+    filen = filename[-7:3] + str(index)+ filename[-4:]
     with Image(file=image) as img:
         ratio = 1
         if img.width > img.height:
@@ -100,5 +105,3 @@ while True:
                                              text=WRONG_URL_TEXT))
     # Let's wait a few seconds for new updates
     sleep(1)
-
-
