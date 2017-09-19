@@ -50,17 +50,15 @@ def resize_sticker(image, imageurl, index):
     filename = imageurl[-7:-4] + str(index) + '.png'
     # Consider hassing the url into hexadecimal of 32 characters? this would probably be inconsistent...
 
-    with Image(file = image) as img:
+    with Image(file=image) as img:
         ratio = 512.0 / (max(img.width, img.height))
         img.resize(int(img.width * ratio), int(img.height * ratio), 'mitchell')
         # Consider if there is another method that doesn't relly on a ratio, this seems inneficcient
-        img.save(filename = os.path.join("downloads", filename))
+        img.save(filename=os.path.join("downloads", filename))
         # Consider saving in downloads in a different folder depending on the product ID and keep them on a database.
 
 
-
-
-def send_stickers(page, remove = True):
+def send_stickers(page, remove=True):
     dl_stickers(page)
     with ZipFile('stickers.zip', 'w') as stickerzip:
         for root, dirs, files in os.walk("downloads/"):
@@ -68,27 +66,31 @@ def send_stickers(page, remove = True):
                 stickerzip.write(os.path.join(root, file))
                 if remove:
                     os.remove(os.path.join(root, file))
-    requests.post(
-        URL + 'sendDocument',
-        params ={'chat_id': update['message']['chat']['id']},
-        files = {'document': open('stickers.zip', 'rb')}
-    )
-    print("snet;)")
+    with open('stickers.zip', 'r') as stickers_zipfile:
+        requests.post(
+            URL + 'sendDocument',
+            params={'chat_id': update['message']['chat']['id']},
+            files={'document': stickers_zipfile}
+        )
+    print("Stickers sent")
 
 
 # We want to keep checking for updates. So this must be a never ending loop
 while True:
     # My chat is up and running, I need to maintain it! Get me all chat updates
-    get_updates = json.loads(requests.get(URL + 'getUpdates',
-                                          params=dict(offset=last_update)).content.decode())
+    get_updates = json.loads(
+                        requests.get(
+                            URL + 'getUpdates',
+                            params={'offset': last_update}
+                            ).content.decode()
+    )
     # Ok, I've got 'em. Let's iterate through each one
     for update in get_updates['result']:
         # First make sure I haven't read this update yet
         if last_update < update['update_id']:
             last_update = update['update_id']
-            f = open('updatefile', 'w')
-            f.write(str(last_update))
-            f.close()
+            with open('updatefile', "w") as updatefile:
+                updatefile.write(str(last_update))
             # I've got a new update. Let's see what it is.
             if 'message' in update:
                 if update['message']['text'][:42] == LINE_URL:
@@ -100,13 +102,16 @@ while True:
                     stickertitle = stickerpage.title.string
                     name = update['message']['from']['first_name']
                     requests.get(URL + 'sendMessage',
-                                 params=dict(chat_id=update['message']['chat']['id'],
-                                             text="Fetching \"" + stickertitle + "\""))
+                                 params={'chat_id': update['message']['chat']['id'],
+                                         'text': "Fetching \"" + stickertitle + "\""})
                     print(name + " (" + str(user) + ")" + " requested " + sticker_url)
                     send_stickers(stickerpage)
+                    # Send_stickers should have a try catch with proper error handling
+                    # Maybe the send_stickers could be placed in another threat as well, to not get the bot stuck while following someone's request.
                 else:
                     requests.get(URL + 'sendMessage',
-                                 params=dict(chat_id=update['message']['chat']['id'],
-                                             text=WRONG_URL_TEXT))
+                                 params={'chat_id': update['message']['chat']['id'],
+                                         'text': WRONG_URL_TEXT}
+                                 )
     # Let's wait a few seconds for new updates
     sleep(1)
