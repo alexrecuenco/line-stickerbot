@@ -1,15 +1,18 @@
+# python3
+
 import json
 import logging
-from time import sleep
-import urllib.request
+import os
 import urllib.parse
-import requests
+import urllib.request
+from time import sleep
+from zipfile import ZipFile
+
 import cssutils
+import requests
 from bs4 import BeautifulSoup
 from wand.image import Image
-from zipfile import ZipFile
-from OpenSSL import SSL
-import os
+
 import config
 
 cssutils.log.setLevel(logging.CRITICAL)
