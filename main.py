@@ -53,10 +53,17 @@ while True:
                     # request = requests.get(sticker_url).text
                     name = update['message']['from']['first_name']
                     print(name + " (" + str(chat_id) + ")" + " requested " + sticker_url)
-                    send_stickers(sticker_url, URL, chatid = chat_id, remove = False)
+                    try:
+                        send_stickers(sticker_url, URL, chat_id = chat_id, remove = True)
                     # Send_stickers should have a try catch with proper error handling
                     # Maybe the send_stickers could be placed in another threat as well,
                     # to not get the bot stuck while following someone's request.
+                    except:
+                        print("Unexpected error")
+                        requests.get(URL + 'sendMessage',
+                                     params={'chat_id': chat_id,
+                                             'text': "An unexpected error occurred, please try again later"}
+                                     )
                 else:
                     requests.get(URL + 'sendMessage',
                                  params = {'chat_id': chat_id,
