@@ -67,3 +67,5 @@ updatefile
 
 #Config file should be hidden, not updated for everyone (Token is secret)
 config.py
+
+*.zip
