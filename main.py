@@ -29,12 +29,19 @@ WRONG_URL_TEXT = config.WRONG_URL_TEXT
 # We want to keep checking for updates. So this must be a never ending loop
 while True:
     # My chat is up and running, I need to maintain it! Get me all chat updates
-    get_updates = json.loads(
-                        requests.get(
-                            URL + 'getUpdates',
-                            params={'offset': last_update}
-                            ).content.decode()
-    )
+    try:
+        print("Checking updates...")
+        get_updates = json.loads(
+                            requests.get(
+                                URL + 'getUpdates',
+                                params={'offset': last_update}
+                                ).content.decode()
+        )
+    except:
+        print("Failed to get updates, unexpected error, will sleep for 10 seconds before trying again")
+        sleep(10)
+        continue
+
     # Ok, I've got 'em. Let's iterate through each one
     for update in get_updates['result']:
         # First make sure I haven't read this update yet
@@ -54,20 +61,22 @@ while True:
                     name = update['message']['from']['first_name']
                     print(name + " (" + str(chat_id) + ")" + " requested " + sticker_url)
                     try:
-                        send_stickers(sticker_url, URL, chat_id = chat_id, remove = True)
+                        send_stickers(sticker_url, URL, chat_id=chat_id, remove = True)
                     # Send_stickers should have a try catch with proper error handling
                     # Maybe the send_stickers could be placed in another threat as well,
                     # to not get the bot stuck while following someone's request.
                     except:
-                        print("Unexpected error")
+                        print("Unexpected error when sending stickers")
                         requests.get(URL + 'sendMessage',
                                      params={'chat_id': chat_id,
-                                             'text': "An unexpected error occurred, please try again later"}
+                                             'text': "An unexpected error occurred, please try again later, or contact the bot manager"}
                                      )
                 else:
                     requests.get(URL + 'sendMessage',
-                                 params = {'chat_id': chat_id,
-                                           'text': WRONG_URL_TEXT}
+                                 params={
+                                     'chat_id': chat_id,
+                                     'text': WRONG_URL_TEXT
+                                 }
                                  )
     # Let's wait a few seconds for new updates
-    sleep(1)
+    sleep(5)
